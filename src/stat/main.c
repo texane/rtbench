@@ -373,7 +373,7 @@ static int rtask_main(void* p)
 
     xxx = (uint32_t)(((uint64_t)xxx * (uint64_t)1000000) / (uint64_t)irq_fclk);
 
-    /* update histogram or missed irq */
+    /* check for missed irq */
 
     if (xxx >= LAT_MAX_COUNT)
     {
@@ -381,18 +381,19 @@ static int rtask_main(void* p)
       goto skip_irq;
     }
 
-    ++arg->lat_hist[xxx];
-
-    /* check for missed irq */
+    /* check for missed IRQ before actually updating histogram */
 
     reg_read_count(epci, &x);
-
     if (arg->irq_count != ((size_t)x - 1))
     {
       ++arg->irq_missed;
       arg->irq_count = (size_t)x - 1;
       goto skip_irq;
     }
+
+    /* update histogram */
+
+    ++arg->lat_hist[xxx];
 
   skip_irq:
     if (is_sigint) break ;

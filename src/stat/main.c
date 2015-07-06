@@ -302,6 +302,10 @@ static int rtask_main(void* p)
     goto on_error_2;
   }
 
+  /* disable to reset counters */
+
+  reg_write_ctl(epci, 0);
+
   /* check magic */
 
   reg_read_magic(epci, &x);
@@ -369,21 +373,30 @@ static int rtask_main(void* p)
 
     xxx = (uint32_t)(((uint64_t)xxx * (uint64_t)1000000) / (uint64_t)irq_fclk);
 
-    /* update histogram or missed */
+    /* update histogram or missed irq */
 
-    if (xxx < LAT_MAX_COUNT) ++arg->lat_hist[xxx];
-    else ++arg->irq_missed;
+    if (xxx >= LAT_MAX_COUNT)
+    {
+      ++arg->irq_missed;
+      goto skip_irq;
+    }
 
-#if 0
+    ++arg->lat_hist[xxx];
+
     /* check for missed irq */
 
     reg_read_count(epci, &x);
-    if (arg->irq_count != (x + 1)) break ;
-#endif
+
+    if (arg->irq_count != ((size_t)x - 1))
+    {
+      ++arg->irq_missed;
+      arg->irq_count = (size_t)x - 1;
+      goto skip_irq;
+    }
 
   skip_irq:
     if (is_sigint) break ;
-    if ((cmd->irq_count > 0) && (arg->irq_count == cmd->irq_count)) break ;
+    if ((cmd->irq_count > 0) && (arg->irq_count >= cmd->irq_count)) break ;
   }
 
   err = 0;

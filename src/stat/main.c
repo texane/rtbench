@@ -253,6 +253,19 @@ static int enable_ebone_slave_interrupt(void)
   return 0;
 }
 
+/* debugging probe setup */
+
+__attribute__((unused)) static void setup_probe(void)
+{
+  /* const uint32_t value = (10 << 15) | (9 << 10) | (8 << 5) | (12 << 0); */
+  static const uint32_t value = (19 << 15) | (21 << 10) | (20 << 5) | (17 << 0);
+  static char* const device_id = "10ee:eb01";
+  epcihandle_t bar;
+  bar = epci_open(device_id, NULL, 0);
+  epci_wr32_reg(bar, 0x0004, value);
+  epci_close(bar);
+}
+
 static int rtask_main(void* p)
 {
   rtask_arg_t* const arg = (rtask_arg_t*)p;
@@ -316,6 +329,11 @@ static int rtask_main(void* p)
   }
 
 #if 0 /* test irq generation */
+  setup_probe();
+
+  /* while (is_sigint == 0) { usleep(100000); } */
+  /* goto on_error_3; */
+
   x = 0;
   while (1)
   {
